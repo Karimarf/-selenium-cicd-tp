@@ -123,5 +123,39 @@ class TestCalculator:
         # Vérifier que le chargement prend moins de 3 secondes
         assert load_time < 3.0, f"Page trop lente à charger: {load_time:.2f}s"
 
+    def test_decimal_numbers(self, driver):
+        self.load_page(driver)
+        driver.find_element(By.ID, "num1").send_keys("2.5")
+        driver.find_element(By.ID, "num2").send_keys("1.2")
+        Select(driver.find_element(By.ID, "operation")).select_by_value("add")
+        driver.find_element(By.ID, "calculate").click()
+        result = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "result"))
+        )
+        # Allowing floating point precision
+        assert "Résultat:" in result.text and abs(float(result.text.split()[-1]) - 3.7) < 0.01
+
+    def test_negative_numbers(self, driver):
+        self.load_page(driver)
+        driver.find_element(By.ID, "num1").send_keys("-5")
+        driver.find_element(By.ID, "num2").send_keys("-3")
+        Select(driver.find_element(By.ID, "operation")).select_by_value("subtract")
+        driver.find_element(By.ID, "calculate").click()
+        result = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "result"))
+        )
+        assert "Résultat: -2" in result.text
+
+    def test_ui_style(self, driver):
+        file_path = os.path.abspath("../src/index.html")
+
+        driver.get(f"file://{file_path}")
+
+        container = driver.find_element(By.CLASS_NAME, "container")
+        background = driver.find_element(By.ID, "result").value_of_css_property("background-color")
+
+        assert container.value_of_css_property("max-width") in ("400px", "400")
+        assert background in ("rgb(240, 240, 240)", "#f0f0f0")
+
 if __name__ == "__main__":
     pytest.main(["-v", "--html=report.html", "--self-contained-html"])
